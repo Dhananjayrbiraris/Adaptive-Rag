@@ -1,14 +1,37 @@
-# Environments
+```
+# Dependencies
 venv/
-.env
-.venv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 env/
-ENV/
+.venv.bak/
+pip-log.txt
+pip-selfcheck.json
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.*
 
 # Python
-__pycache__/
 *.py[cod]
 *$py.class
+*$pyc.class
 *.so
 .Python
 build/
@@ -26,14 +49,23 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# IDEs
-.idea/
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
 
-# Project specific
-app.log
-description.txt
-.agents/
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*
+```
