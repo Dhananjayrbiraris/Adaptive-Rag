@@ -3,19 +3,21 @@ ReAct agent setup for document retrieval and question answering.
 """
 
 import os
+import logging
 
-from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate
+from langgraph.prebuilt import create_react_agent
 
 from backend.config.settings import prompt_config
-from backend.engine.llms.openai import llm
+from backend.engine.llms.openai import get_llm
 from backend.engine.retriever_setup import get_retriever
 
+logger = logging.getLogger(__name__)
 config = prompt_config
 
 # Load document description if available
-if os.path.exists("description.txt"):
-    with open("description.txt", "r", encoding="utf-8") as f:
+if os.path.exists("description_codebase.txt"):
+    with open("description_codebase.txt", "r", encoding="utf-8") as f:
         description = f.read()
 else:
     description = None
@@ -28,18 +30,16 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 
-def get_agent_executor() -> AgentExecutor:
+def get_agent_executor():
     """
     Build and return the ReAct AgentExecutor with a freshly-initialized retriever.
     Called lazily at query time instead of at module import to avoid blocking startup.
     """
-    tools = [get_retriever()]
-    react_agent = create_react_agent(llm, tools, prompt)
-    return AgentExecutor(
-        agent=react_agent,
-        tools=tools,
-        handle_parsing_errors=True,
-        max_iterations=2,
-        verbose=True,
-        return_intermediate_steps=True
-    )
+    try:
+        llm = get_llm()
+        tools = [get_retriever()]
+        react_agent = create_react_agent(llm, tools, prompt)
+        return react_agent
+    except Exception as e:
+        logger.error(f"Error creating agent executor: {e}", exc_info=True)
+        raise

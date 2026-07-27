@@ -2,6 +2,8 @@
 Graph builder module for the adaptive RAG system.
 """
 
+import logging
+
 from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import PromptTemplate
@@ -17,6 +19,7 @@ from backend.models.route_identifier import RouteIdentifier
 from backend.models.state import State
 from backend.tools.graph_tools import routing_tool, doc_tool
 
+logger = logging.getLogger(__name__)
 config = prompt_config
 
 
@@ -34,8 +37,7 @@ def query_classifier(state: State):
     question = state["messages"][-1].content
     retriever = get_retriever()
     context = retriever.invoke(question)
-    print("docs received from Qdrant")
-    print(context)
+    logger.debug(f"Retrieved {len(context)} documents from Qdrant")
 
     llm_with_structured_output = llm.with_structured_output(RouteIdentifier)
     classify_prompt = PromptTemplate(
@@ -44,8 +46,7 @@ def query_classifier(state: State):
     )
     chain = classify_prompt | llm_with_structured_output
     result = chain.invoke({"question": question, "context": context})
-    print("result received is in query classifier")
-    print(result.route)
+    logger.info(f"Query classified as: {result.route}")
 
     return {"messages": state["messages"], "route": result.route, "latest_query": question}
 
@@ -61,8 +62,7 @@ def general_llm(state: State):
         dict: Updated messages from LLM.
     """
     result = llm.invoke(state["messages"])
-    print("inside general llm")
-    print(result)
+    logger.debug("General LLM response generated")
     return {"messages": result}
 
 
@@ -120,8 +120,8 @@ def grade(state: State):
 
     chain_graded = grading_prompt | llm_with_grade
     result = chain_graded.invoke({"question": question, "context": context})
+    logger.info(f"Document grading result: {result.binary_score}")
 
-    print(result)
     return {"messages": state["messages"], "binary_score": result.binary_score}
 
 
@@ -142,7 +142,7 @@ def rewrite_query(state: State):
     )
     chain = rewrite_prompt | llm
     result = chain.invoke({"query": query})
-    print(result)
+    logger.debug(f"Query rewritten: {result.content[:50]}...")
 
     return {
         "latest_query": result.content
@@ -168,6 +168,7 @@ def generate(state: State):
 
     generate_chain = generate_prompt | llm
     result = generate_chain.invoke({"context": context})
+    logger.info("Final answer generated")
 
     return {"messages": [{"role": "assistant", "content": result.content}]}
 
@@ -189,7 +190,7 @@ def web_search(state: State):
     result = search_tool.invoke(state["latest_query"])
 
     contents = [item["content"] for item in result if "content" in item]
-    print(contents)
+    logger.debug(f"Web search returned {len(contents)} results")
 
     return {
         "messages": [{"role": "assistant", "content": "\n\n".join(contents)}]
